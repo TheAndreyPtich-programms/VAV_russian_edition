@@ -1,0 +1,21 @@
+# Настройки PyCharm
+.idea/
+
+# Виртуальное окружение
+venv/
+.venv/
+env/
+
+# Кэш Python
+__pycache__/
+*.pyc
+
+# Твой личный конфиг и логи (мы создадим шаблон вместо него)
+config.json
+assistant.log
+remembered_texts.txt
+
+# Тяжелые папки с моделями и превью
+models/
+gesture_previews/
+*.task

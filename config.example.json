@@ -1,0 +1,59 @@
+{
+  "model_paths": {
+    "ru": "models/vosk-model-small-ru-0.22",
+    "en": "models/vosk-model-small-en-us-0.15"
+    },
+    "wake_word": "Привет",
+    "commands": {
+        "open_apps": {
+            "Блокнот": {
+                "phrases": [
+                    "блокнот",
+                    "notepad"
+                ],
+                "path": "notepad.exe"
+            },
+            "Калькулятор": {
+                "phrases": [
+                    "калькулятор",
+                    "calc"
+                ],
+                "path": "calc.exe"
+            }
+      
+        }
+    },
+    "text_commands": {
+        "copy_paste": [
+            "скопируй",
+            "копировать",
+            "скопировать",
+            "скопируй и вставь"
+        ],
+        "paste": [
+            "вставь",
+            "вставить",
+            "вклей",
+            "сюда"
+        ],
+        "cut_paste": [
+            "вырежи",
+            "вырезать"
+        ],
+        "remember_text": [
+            "запомни",
+            "запомнить текст",
+            "запомни это"
+        ],
+        "insert_remembered": [
+            "скажи",
+            "вставь запомненное",
+            "вставь сохранённое",
+            "скажи запомненное"
+        ]
+    },
+    "gestures": {
+        "none": {
+        }
+    }
+}
