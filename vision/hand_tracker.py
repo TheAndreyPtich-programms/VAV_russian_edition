@@ -5,75 +5,73 @@ from mediapipe.tasks.python import vision
 import threading
 import queue
 import os
+from pathlib import Path
 import urllib.request
+import sys
 
-#установка нужной мне модели если еще не установлена
+# --- НОВЫЙ БЛОК ОПРЕДЕЛЕНИЯ ПУТИ (как в main.py) ---
+if getattr(sys, 'frozen', False):
+    BASE_DIR = Path(os.path.dirname(sys.executable))
+else:
+    # Поднимаемся на уровень выше, так как hand_tracker.py лежит в подпапке (например, vision/)
+    BASE_DIR = Path(__file__).resolve().parent.parent
+
 MODEL_URL = "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task"
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "hand_landmarker.task")
+# Теперь модель будет качаться в корень папки проекта/директории exe
+MODEL_PATH = str(BASE_DIR / "hand_landmarker.task")
+# ------------------------------------------------
 
 # корды точек руки
 HAND_CONNECTIONS = [
-    (0, 1), (1, 2), (2, 3), (3, 4),  #большой палец
-    (0, 5), (5, 6), (6, 7), (7, 8),  #указательный
-    (0, 9), (9, 10), (10, 11), (11, 12),  #средний
-    (0, 13), (13, 14), (14, 15), (15, 16),  #безымянный
-    (0, 17), (17, 18), (18, 19), (19, 20),  #мизинец
-    (5, 9), (9, 13), (13, 17)  #центральная часть
+    (0, 1), (1, 2), (2, 3), (3, 4),  # большой палец
+    (0, 5), (5, 6), (6, 7), (7, 8),  # указательный
+    (0, 9), (9, 10), (10, 11), (11, 12),  # средний
+    (0, 13), (13, 14), (14, 15), (15, 16),  # безымянный
+    (0, 17), (17, 18), (18, 19), (19, 20),  # мизинец
+    (5, 9), (9, 13), (13, 17)  # центральная часть
 ]
 
-#рисовалка точек и линий для наглядности
+
 def _draw_hand_manually(frame, landmarks):
     h, w, _ = frame.shape
-    # линии
-    for i, j in HAND_CONNECTIONS:
-        p1, p2 = landmarks[i], landmarks[j]
-        cv2.line(frame,
-                 (int(p1[0] * w), int(p1[1] * h)),
-                 (int(p2[0] * w), int(p2[1] * h)),
-                 (0, 255, 0), 2)
-    # рисование точек
-    for (x, y, _) in landmarks:
-        cv2.circle(frame, (int(x * w), int(y * h)), 4, (255, 0, 0), -1)
-
-
-def _download_model():
-    if not os.path.exists(MODEL_PATH):
-        print("Загрузка модели hand_landmarker.task...")
-        urllib.request.urlretrieve(MODEL_URL, MODEL_PATH)
-        print("Модель загружена.")
+    for lm in landmarks:
+        cx, cy = int(lm[0] * w), int(lm[1] * h)
+        cv2.circle(frame, (cx, cy), 5, (0, 255, 0), -1)
+    for connection in HAND_CONNECTIONS:
+        start_idx, end_idx = connection
+        lm_start = landmarks[start_idx]
+        lm_end = landmarks[end_idx]
+        x1, y1 = int(lm_start[0] * w), int(lm_start[1] * h)
+        x2, y2 = int(lm_end[0] * w), int(lm_end[1] * h)
+        cv2.line(frame, (x1, y1), (x2, y2), (255, 0, 0), 2)
 
 
 class HandTracker:
     def __init__(self):
-        _download_model()
+        # Скачивание модели, если её нет
+        if not os.path.exists(MODEL_PATH):
+            print(f"[ЗАГРУЗКА] Загрузка модели MediaPipe: {MODEL_URL}")
+            urllib.request.urlretrieve(MODEL_URL, MODEL_PATH)
+            print("[УСПЕХ] Модель успешно загружена!")
 
-        self.cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
-        if not self.cap.isOpened():
-            raise RuntimeError("Камера не найдена или занята другим приложением.")
-        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-        self.cap.set(cv2.CAP_PROP_FPS, 30)
-
+        print("[ИНФО] Инициализация MediaPipe Detector...")
         base_options = python.BaseOptions(model_asset_path=MODEL_PATH)
         options = vision.HandLandmarkerOptions(
             base_options=base_options,
             running_mode=vision.RunningMode.VIDEO,
-            num_hands=1,
-            min_hand_detection_confidence=0.7,
-            min_hand_presence_confidence=0.7,
-            min_tracking_confidence=0.5
+            num_hands=1
         )
         self.detector = vision.HandLandmarker.create_from_options(options)
+        print("[УСПЕХ] MediaPipe Detector инициализирован!")
 
-        self.cap = cv2.VideoCapture(0)
-        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        print("[ИНФО] Подключение к камере...")
+        # Добавили cv2.CAP_DSHOW для стабильности под Windows в exe
+        self.cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
 
-        self.frame_queue = queue.Queue(maxsize=1)
-        self.landmarks_queue = queue.Queue(maxsize=1)
         self.running = False
         self.thread = None
-
+        self.frame_queue = queue.Queue(maxsize=2)
+        self.landmarks_queue = queue.Queue(maxsize=2)
     def start(self):
         self.running = True
         self.thread = threading.Thread(target=self._capture_loop, daemon=True)

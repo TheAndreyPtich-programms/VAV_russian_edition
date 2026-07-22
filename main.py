@@ -1,32 +1,85 @@
+import sys
+import subprocess
+import importlib.util
+
+
+def bootstrap_dependencies():
+    print("проверка нужных библиотек...")
+
+    deps = {
+        "cv2": "opencv-python",
+        "mediapipe": "mediapipe",
+        "vosk": "vosk",
+        "pyautogui": "pyautogui",
+        "keyboard": "keyboard",
+        "numpy": "numpy",
+        "PIL": "Pillow",
+        "screeninfo": "screeninfo",
+        "pyaudio": "PyAudio"
+    }
+
+    missing = []
+    for mod, pkg in deps.items():
+        if importlib.util.find_spec(mod) is None:
+            missing.append(pkg)
+
+    if not missing:
+        print("все библиотеки установлены")
+        return
+
+    print(f"установка библиотек: {', '.join(missing)}")
+
+    # Разделяем PyAudio и остальные, так как PyAudio на Windows часто требует pipwin
+    standard_pkgs = [p for p in missing if p != "PyAudio"]
+    need_pyaudio = "PyAudio" in missing
+
+    if standard_pkgs:
+        try:
+            subprocess.check_call([sys.executable, "-m", "pip", "install", *standard_pkgs])
+        except:
+            print("Ошибка установки основных библиотек.")
+
+    if need_pyaudio:
+        print("Попытка установки PyAudio...")
+        try:
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "PyAudio"])
+        except:
+            print("Стандартная установка PyAudio не удалась. Пробуем через pipwin...")
+            try:
+                subprocess.check_call([sys.executable, "-m", "pip", "install", "pipwin"])
+                subprocess.check_call([sys.executable, "-m", "pipwin", "install", "pyaudio"])
+            except:
+                print("ВНИМАНИЕ: Не удалось установить PyAudio. Микрофон может не работать.")
+
+    print("все библиотеки установлены")
+
+
+bootstrap_dependencies()
+
 import pyautogui
 import tkinter as tk
 from tkinter import scrolledtext, messagebox
 import json
-import sys
 import keyboard
 import threading
 import queue
-import time 
+import time
 import os
 import cv2
-import subprocess
 import ctypes
 from pathlib import Path
 from datetime import datetime
+
 sys.path.append(str(Path(__file__).parent))
-
 from audio.recognizer import VoskRecognizer
-
 from vision.hand_tracker import HandTracker
 from vision.gesture_matcher import match_gesture
 from vision.mouse_controller import MouseController
-
 from commands.matcher import match_command
 from audio.microphone import get_microphone_stream
-from audio.recognizer import VoskRecognizer
-
 
 LOG_FILE = Path(__file__).parent / "assistant.log"
+
 
 def write_log(message):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -132,6 +185,7 @@ class VoiceAssistantApp:
         self._process_commands()
 
         write_log("Программа запущена")
+        self.add_log("Все библиотеки установлены и проверены")
 
         self.root.after(1500, self._auto_start_services)
 
@@ -854,7 +908,7 @@ class VoiceAssistantApp:
         if command_text.startswith("нажмите "):
             key_name = extract_key_name(command_text).strip()
             if not key_name:
-                self.add_log("Не указана клавиша. Пример: нажми арбуз")
+                self.add_log("Не указана клавиша. Пример: нажмите арбуз")
                 return
 
             mapped = normalize_key_name_smart(key_name)
@@ -882,10 +936,10 @@ class VoiceAssistantApp:
             return
 
         # зажатие клавиш
-        if command_text.startswith("зажми "):
+        if command_text.startswith("держи "):
             key_name = extract_key_name(command_text).strip()
             if not key_name:
-                self.add_log( "Не указана клавиша. Пример: зажми шифт")
+                self.add_log( "Не указана клавиша. Пример: держи шифт")
                 return
             mapped = normalize_key_name_smart(key_name)
 
@@ -916,7 +970,7 @@ class VoiceAssistantApp:
             return
 
         # отжатие клавиш
-        if command_text.startswith("отожми "):
+        if command_text.startswith("отпусти "):
             key_name = extract_key_name(command_text).strip()
             import keyboard
 
@@ -993,7 +1047,7 @@ class VoiceAssistantApp:
                 word_to_num = {
                     "десять": 10, "двадцать": 20, "тридцать": 30, "сорок": 40, "пятьдесят": 50,
                     "сто": 100, "двести": 200, "триста": 300, "четыреста": 400, "пятьсот": 500,
-                    "тысяча": 1000
+                    "тысяча": 1000, "сотня":100
                 }
 
                 dist_str_lower = dist_str.lower()

@@ -43,19 +43,66 @@ class SettingsWindow:
         else:
             # конфиг база
             default = {
-                "wake_word": "компьютер",
+              "model_paths": {
+                "ru": "models/vosk-model-small-ru-0.22",
+                "en": "models/vosk-model-small-en-us-0.15"
+                },
+                "model_urls": {
+                  "vosk-model-small-ru-0.22": "https://drive.google.com/file/d/19eroKrWKTYA4G6viAEWQC0a_UFdO7mec/view?usp=drive_link",
+                  "vosk-model-small-en-us-0.15": "https://drive.google.com/file/d/14gub2O_Hp9RWo95P7_J8nYQj_sG-ulWg/view?usp=drive_link"
+                },
+                "wake_word": "Привет",
                 "commands": {
                     "open_apps": {
-                        "Блокнот": {"phrases": ["блокнот", "notepad"], "path": "notepad.exe"},
-                        "Калькулятор": {"phrases": ["калькулятор", "calc"], "path": "calc.exe"}
+                        "Блокнот": {
+                            "phrases": [
+                                "блокнот",
+                                "notepad"
+                            ],
+                            "path": "notepad.exe"
+                        },
+                        "Калькулятор": {
+                            "phrases": [
+                                "калькулятор",
+                                "calc"
+                            ],
+                            "path": "calc.exe"
+                        }
+
                     }
                 },
                 "text_commands": {
-                    "copy_paste": ["скопируй", "копировать", "скопировать", "скопируй и вставь"],
-                    "paste": ["вставь", "вставить", "вклей"],
-                    "cut_paste": ["вырежи", "вырезать"],
-                    "remember_text": ["запомни", "запомнить текст", "запомни это"],
-                    "insert_remembered": ["вставь запомненное", "вставь сохранённое", "скажи запомненное"]
+                    "copy_paste": [
+                        "скопируй",
+                        "копировать",
+                        "скопировать",
+                        "скопируй и вставь"
+                    ],
+                    "paste": [
+                        "вставь",
+                        "вставить",
+                        "вклей",
+                        "сюда"
+                    ],
+                    "cut_paste": [
+                        "вырежи",
+                        "вырезать"
+                    ],
+                    "remember_text": [
+                        "запомни",
+                        "запомнить текст",
+                        "запомни это"
+                    ],
+                    "insert_remembered": [
+                        "скажи",
+                        "вставь запомненное",
+                        "вставь сохранённое",
+                        "скажи запомненное"
+                    ]
+                },
+                "gestures": {
+                    "none": {
+                    }
                 }
             }
             with open(self.config_file, "w", encoding="utf-8") as f:
