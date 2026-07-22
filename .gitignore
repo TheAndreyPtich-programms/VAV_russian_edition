@@ -19,3 +19,7 @@ remembered_texts.txt
 models/
 gesture_previews/
 *.task
+
+build/
+dist/
+*.spec
